@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>RVIGNA CHESS</title>
+    <meta name="application-name" content="RVIGNA CHESS">
+    <meta name="description" content="RVIGNA CHESS - Online multiplayer chess game">
+    <meta name="theme-color" content="#f0ebe0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Chess">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/vendor/fonts.css">
+    <link rel="stylesheet" href="/vendor/fa/all.min.css">
+</head>
+<body>
+
+    <!-- Reconnect banner (online mode only) -->
+    <div id="reconnect-banner">
+        <div id="reconnect-spinner" class="reconnect-spinner"></div>
+        <span id="reconnect-msg">Reconnecting to game...</span>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         DESKTOP TOP BAR (hidden on mobile/tablet)
+    ════════════════════════════════════════════════════ -->
+    <header class="desktop-header">
+        <span class="site-title">Rvigna <em>Chess</em></span>
+        <div class="desktop-toolbar">
+            <div class="control-group">
+                <button onclick="resetGame()" title="New game" class="icon-btn"><i class="fas fa-chess"></i></button>
+                <button id="btn-undo" onclick="undoMove()" title="Undo last move" class="icon-btn"><i class="fas fa-undo"></i></button>
+            </div>
+            <div class="control-group">
+                <button id="btn-vs-computer" onclick="showComputerModal()" title="vs Computer" class="icon-btn"><i class="fas fa-desktop"></i></button>
+                <button id="btn-online" onclick="showOnlineModal()" title="Play online" class="icon-btn"><i class="fas fa-globe"></i></button>
+                <span id="server-dot" class="server-status-dot" title="Checking server..."></span>
+            </div>
+            <div class="control-group">
+                <button id="btn-resign" onclick="resign()" style="display:none" title="Resign" class="icon-btn resign"><i class="fas fa-flag"></i></button>
+                <button id="btn-draw-offer" onclick="offerDraw()" style="display:none" title="Offer draw" class="icon-btn"><i class="fas fa-handshake"></i></button>
+                <button id="btn-analyse" onclick="analyseGame()" style="display:none" title="Analyse game" class="icon-btn"><i class="fas fa-chart-line"></i></button>
+            </div>
+            <div class="control-group">
+                <button onclick="importPGN()" title="Import PGN" class="icon-btn"><i class="fas fa-file-import"></i></button>
+                <button onclick="exportPGN()" title="Export PGN" class="icon-btn"><i class="fas fa-file-export"></i></button>
+            </div>
+            <div class="control-group">
+                <button id="btn-sound" onclick="toggleSound()" title="Toggle sound" class="icon-btn active-mode"><i class="fas fa-volume-up"></i></button>
+                <button onclick="clearAppCache()" title="Clear cache" class="icon-btn"><i class="fas fa-sync"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════
+         MAIN LAYOUT WRAPPER
+    ════════════════════════════════════════════════════ -->
+    <div class="app-layout">
+
+        <!-- ── LEFT SIDEBAR (desktop: move history) ───── -->
+        <aside class="sidebar sidebar-left" id="sidebar-left">
+            <div class="sidebar-header">
+                <span class="sidebar-title">Move History</span>
+                <button class="sidebar-close-btn" onclick="closeDrawer('sidebar-left')" title="Close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="move-history">
+                <div class="move-list-wrapper">
+                    <ul class="move-list" id="move-list"></ul>
+                </div>
+                <div id="move-nav" class="review-nav" style="display:none">
+                    <div id="review-banner" class="review-banner" style="display:none">Review Mode</div>
+                    <div class="nav-controls">
+                        <button onclick="navFirst()" title="First">&#171;</button>
+                        <button onclick="navPrev()" title="Previous">&#8249;</button>
+                        <button onclick="navNext()" title="Next">&#8250;</button>
+                        <button onclick="navLast()" title="Last">&#187;</button>
+                    </div>
+                    <button id="btn-return-live" class="review-exit-btn" onclick="returnToLive()" style="display:none">&#8617; Return to Game</button>
+                    <button id="btn-exit-review" class="review-exit-btn" onclick="exitReviewMode()" style="display:none">Exit Review</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── BOARD COLUMN (always visible) ──────────── -->
+        <main class="board-column">
+
+            <!-- Online status bar -->
+            <div id="online-bar">
+                <div>
+                    <span class="online-bar-room" id="online-bar-code"></span>
+                    <span class="online-bar-you" id="online-bar-you"></span>
+                </div>
+                <div class="online-bar-opp" id="online-bar-opp"></div>
+            </div>
+
+            <div id="status-bar" class="status-bar turn-white">
+                <div class="status-dot"></div>
+                <span id="game-status">Connecting...</span>
+            </div>
+
+            <!-- Black Captured Pieces -->
+            <div class="captured-pieces-container">
+                <div class="captured-pieces" id="captured-black"></div>
+                <span class="material-diff" id="material-diff-top"></span>
+            </div>
+
+            <div class="board-wrapper">
+                <!-- top row -->
+                <div></div>
+                <div class="file-labels" id="file-labels-top">
+                    <div class="file-label">a</div><div class="file-label">b</div>
+                    <div class="file-label">c</div><div class="file-label">d</div>
+                    <div class="file-label">e</div><div class="file-label">f</div>
+                    <div class="file-label">g</div><div class="file-label">h</div>
+                </div>
+                <div></div>
+                <!-- middle row -->
+                <div class="rank-labels" id="rank-labels">
+                    <div>8</div><div>7</div><div>6</div><div>5</div>
+                    <div>4</div><div>3</div><div>2</div><div>1</div>
+                </div>
+                <div id="chessboard"></div>
+                <div class="rank-labels" id="rank-labels-right">
+                    <div>8</div><div>7</div><div>6</div><div>5</div>
+                    <div>4</div><div>3</div><div>2</div><div>1</div>
+                </div>
+                <!-- bottom row -->
+                <div></div>
+                <div class="file-labels" id="file-labels">
+                    <div class="file-label">a</div><div class="file-label">b</div>
+                    <div class="file-label">c</div><div class="file-label">d</div>
+                    <div class="file-label">e</div><div class="file-label">f</div>
+                    <div class="file-label">g</div><div class="file-label">h</div>
+                </div>
+                <div></div>
+            </div>
+
+            <!-- White Captured Pieces -->
+            <div class="captured-pieces-container">
+                <div class="captured-pieces" id="captured-white"></div>
+                <span class="material-diff" id="material-diff-bottom"></span>
+            </div>
+
+            <!-- Desktop inline toolbar (duplicate IDs avoided — these mirror the header) -->
+            <!-- Hidden on mobile (bottom bar is used instead) -->
+            <div class="controls desktop-controls">
+                <div class="control-group">
+                    <button onclick="resetGame()" title="New game" class="icon-btn"><i class="fas fa-chess"></i></button>
+                    <button id="btn-undo2" onclick="undoMove()" title="Undo" class="icon-btn" style="display:none"><i class="fas fa-undo"></i></button>
+                </div>
+                <div class="control-group">
+                    <button id="btn-vs-computer2" onclick="showComputerModal()" title="vs Computer" class="icon-btn"><i class="fas fa-desktop"></i></button>
+                    <button id="btn-online2" onclick="showOnlineModal()" title="Play online" class="icon-btn"><i class="fas fa-globe"></i></button>
+                </div>
+                <div class="control-group">
+                    <button id="btn-resign2" onclick="resign()" style="display:none" title="Resign" class="icon-btn resign"><i class="fas fa-flag"></i></button>
+                    <button id="btn-draw-offer2" onclick="offerDraw()" style="display:none" title="Offer draw" class="icon-btn"><i class="fas fa-handshake"></i></button>
+                    <button id="btn-analyse2" onclick="analyseGame()" style="display:none" title="Analyse" class="icon-btn"><i class="fas fa-chart-line"></i></button>
+                </div>
+                <div class="control-group">
+                    <button onclick="importPGN()" title="Import PGN" class="icon-btn"><i class="fas fa-file-import"></i></button>
+                    <button onclick="exportPGN()" title="Export PGN" class="icon-btn"><i class="fas fa-file-export"></i></button>
+                </div>
+                <div class="control-group">
+                    <button id="btn-sound2" onclick="toggleSound()" title="Toggle sound" class="icon-btn active-mode"><i class="fas fa-volume-up"></i></button>
+                    <button onclick="clearAppCache()" title="Clear cache" class="icon-btn"><i class="fas fa-sync"></i></button>
+                </div>
+            </div>
+
+            <input type="file" id="pgn-file-input" accept=".pgn,text/plain" style="display:none" onchange="handlePgnFile(this)">
+        </main>
+
+        <!-- ── RIGHT SIDEBAR (desktop: chat) ──────────── -->
+        <aside class="sidebar sidebar-right" id="sidebar-right">
+            <div class="sidebar-header">
+                <span class="sidebar-title">Chat</span>
+                <button class="sidebar-close-btn" onclick="closeDrawer('sidebar-right')" title="Close"><i class="fas fa-times"></i></button>
+            </div>
+            <!-- Chat Panel (online mode only) -->
+            <div class="chat-panel" id="chat-panel" style="display:none">
+                <div class="chat-messages" id="chat-messages"></div>
+                <form class="chat-form" id="chat-form" onsubmit="sendChat(event)">
+                    <input class="chat-input" id="chat-input" type="text" maxlength="200" placeholder="Message…" autocomplete="off">
+                    <button type="submit" class="chat-send-btn">&#10148;</button>
+                </form>
+            </div>
+            <div class="sidebar-offline-msg" id="sidebar-offline-msg">
+                <i class="fas fa-globe" style="font-size:24px;opacity:0.3;margin-bottom:8px"></i>
+                <p>Chat is only available in online games.</p>
+            </div>
+        </aside>
+
+    </div><!-- /.app-layout -->
+
+    <!-- Drawer backdrop (mobile/tablet) -->
+    <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeAllDrawers()"></div>
+
+    <!-- ═══════════════════════════════════════════════════
+         MOBILE BOTTOM TAB BAR
+    ════════════════════════════════════════════════════ -->
+    <nav class="bottom-tab-bar">
+        <button class="tab-btn" onclick="resetGame()" title="New Game">
+            <i class="fas fa-chess"></i>
+            <span>New</span>
+        </button>
+        <button class="tab-btn" onclick="toggleDrawer('sidebar-left')" title="History" id="tab-history">
+            <i class="fas fa-list-ol"></i>
+            <span>History</span>
+        </button>
+        <button class="tab-btn tab-btn-center" onclick="showOnlineModal()" title="Play Online" id="tab-online">
+            <i class="fas fa-globe"></i>
+            <span class="server-status-dot server-status-dot--tab" id="server-dot-mobile"></span>
+            <span>Online</span>
+        </button>
+        <button class="tab-btn" onclick="toggleDrawer('sidebar-right')" title="Chat" id="tab-chat">
+            <i class="fas fa-comments"></i>
+            <span>Chat</span>
+        </button>
+        <button class="tab-btn" onclick="showMobileMenu()" title="More">
+            <i class="fas fa-ellipsis-h"></i>
+            <span>More</span>
+        </button>
+    </nav>
+
+    <!-- Mobile "More" menu sheet -->
+    <div class="mobile-menu-sheet" id="mobile-menu-sheet">
+        <div class="mobile-menu-handle"></div>
+        <div class="mobile-menu-grid">
+            <button class="mobile-menu-item" onclick="showComputerModal();closeMobileMenu()" id="mob-vs-computer">
+                <i class="fas fa-desktop"></i><span>vs Computer</span>
+            </button>
+            <button class="mobile-menu-item" onclick="undoMove();closeMobileMenu()" id="mob-undo">
+                <i class="fas fa-undo"></i><span>Undo</span>
+            </button>
+            <button class="mobile-menu-item resign" onclick="resign();closeMobileMenu()" id="mob-resign" style="display:none">
+                <i class="fas fa-flag"></i><span>Resign</span>
+            </button>
+            <button class="mobile-menu-item" onclick="offerDraw();closeMobileMenu()" id="mob-draw" style="display:none">
+                <i class="fas fa-handshake"></i><span>Draw</span>
+            </button>
+            <button class="mobile-menu-item" onclick="analyseGame();closeMobileMenu()" id="mob-analyse" style="display:none">
+                <i class="fas fa-chart-line"></i><span>Analyse</span>
+            </button>
+            <button class="mobile-menu-item" onclick="importPGN();closeMobileMenu()">
+                <i class="fas fa-file-import"></i><span>Import</span>
+            </button>
+            <button class="mobile-menu-item" onclick="exportPGN();closeMobileMenu()">
+                <i class="fas fa-file-export"></i><span>Export</span>
+            </button>
+
+            <button class="mobile-menu-item" onclick="toggleSound();closeMobileMenu()" id="mob-sound">
+                <i class="fas fa-volume-up"></i><span>Sound</span>
+            </button>
+            <button class="mobile-menu-item" onclick="clearAppCache();closeMobileMenu()">
+                <i class="fas fa-sync"></i><span>Refresh</span>
+            </button>
+        </div>
+    </div>
+    <div class="mobile-menu-backdrop" id="mobile-menu-backdrop" onclick="closeMobileMenu()"></div>
+
+    <!-- Online Play Modal -->
+    <div class="online-overlay" id="online-overlay"></div>
+    <div class="online-modal" id="online-modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-globe"></i> Play Online</h3>
+            <p class="modal-subtitle">Challenge a friend in real-time chess</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="online-tabs">
+            <button class="online-tab active" data-tab="create" onclick="switchOnlineTab('create')">
+                <i class="fas fa-plus"></i> Create Game
+            </button>
+            <button class="online-tab" data-tab="join" onclick="switchOnlineTab('join')">
+                <i class="fas fa-sign-in-alt"></i> Join Game
+            </button>
+            <button class="online-tab" data-tab="browse" onclick="switchOnlineTab('browse')">
+                <i class="fas fa-list"></i> Browse
+            </button>
+        </div>
+
+        <!-- Create Tab -->
+        <div class="online-tab-content active" id="tab-create">
+            <div class="online-section">
+                <div class="online-section-title">Select Your Color</div>
+                <div class="color-choice">
+                    <button class="color-btn selected" data-color="white" onclick="selectOnlineColor('white')"><i class="fas fa-chess-king"></i> White</button>
+                    <button class="color-btn" data-color="black" onclick="selectOnlineColor('black')"><i class="fas fa-chess-king"></i> Black</button>
+                    <button class="color-btn" data-color="random" onclick="selectOnlineColor('random')"><i class="fas fa-random"></i> Random</button>
+                </div>
+            </div>
+
+            <div class="online-section online-waiting-section" id="online-waiting-section" style="display:none">
+                <div class="online-section-title">Your Game Is Ready</div>
+                <p class="waiting-hint">Share this code with your opponent:</p>
+                <div class="room-code-display" id="room-code-display" onclick="copyRoomCode()" title="Click to copy">
+                    <span id="code-text"></span>
+                    <i class="fas fa-copy"></i>
+                </div>
+                <div class="room-code-hint">
+                    <span class="online-status-badge badge-waiting">
+                        <span class="online-status-dot dot-waiting"></span> Waiting for opponent...
+                    </span>
+                </div>
+                <button class="btn-cancel" onclick="hideOnlineModal()" style="margin-top:12px">Cancel &amp; Close</button>
+            </div>
+
+            <div class="online-section" id="online-create-btn-section">
+                <button onclick="createOnlineRoom()" class="btn-primary" style="width:100%">
+                    <i class="fas fa-play"></i> Create & Share Code
+                </button>
+            </div>
+        </div>
+
+        <!-- Join Tab -->
+        <div class="online-tab-content" id="tab-join">
+            <div class="online-section">
+                <div class="online-section-title">Enter Game Code</div>
+                <p class="waiting-hint">Ask your opponent for their 6-character code</p>
+                <div class="join-input-wrapper">
+                    <input class="join-input" id="join-code-input" maxlength="6" placeholder="e.g., ABC123"
+                        oninput="this.value=this.value.toUpperCase()">
+                    <button onclick="joinOnlineRoom()" class="btn-primary">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Browse Tab -->
+        <div class="online-tab-content" id="tab-browse">
+            <div class="online-section" style="padding-bottom:0">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                    <div class="online-section-title" style="margin-bottom:0">Open Games</div>
+                    <button onclick="loadOpenRooms()" class="open-rooms-refresh" title="Refresh">
+                        <i class="fas fa-sync-alt" id="open-rooms-refresh-icon"></i>
+                    </button>
+                </div>
+                <div id="open-rooms-list" class="open-rooms-list">
+                    <div class="open-rooms-empty">Loading…</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer-online">
+            <button onclick="hideOnlineModal()" class="btn-secondary" style="width:100%">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+
+    <!-- vs Computer Modal -->
+    <div class="online-overlay" id="computer-overlay"></div>
+    <div class="online-modal" id="computer-modal" style="min-width:0;width:min(320px,calc(100vw - 32px))">
+        <div class="modal-header">
+            <h3><i class="fas fa-desktop"></i> Play vs Computer</h3>
+        </div>
+        <div class="online-tab-content active">
+            <div class="online-section">
+                <div class="online-section-title">Your Color</div>
+                <div class="color-choice">
+                    <button class="color-btn selected" data-cc="white" onclick="selectComputerColor('white')"><i class="fas fa-chess-king"></i> White</button>
+                    <button class="color-btn" data-cc="black" onclick="selectComputerColor('black')"><i class="fas fa-chess-king" style="color:#555"></i> Black</button>
+                    <button class="color-btn" data-cc="random" onclick="selectComputerColor('random')"><i class="fas fa-random"></i> Random</button>
+                </div>
+            </div>
+            <div class="online-section">
+                <div class="online-section-title">Difficulty</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="difficulty-btn selected" data-level="1" onclick="selectDifficulty(1)">Easy</button>
+                    <button class="difficulty-btn" data-level="2" onclick="selectDifficulty(2)">Normal</button>
+                    <button class="difficulty-btn" data-level="3" onclick="selectDifficulty(3)">Hard</button>
+                </div>
+            </div>
+            <button onclick="startVsComputer()" class="btn-primary" style="margin-top:4px"><i class="fas fa-play"></i> Start Game</button>
+        </div>
+        <div class="modal-footer-online" style="display:flex;gap:8px">
+            <button onclick="stopVsComputer()" class="btn-secondary" style="flex:1"><i class="fas fa-users"></i> Local Game</button>
+            <button onclick="hideComputerModal()" class="btn-secondary" style="flex:1"><i class="fas fa-times"></i> Close</button>
+        </div>
+    </div>
+
+    <!-- Draw offer notification -->
+    <div class="online-overlay" id="draw-offer-overlay"></div>
+    <div class="pgn-modal" id="draw-offer-modal" style="min-width:0;width:min(340px,calc(100vw - 32px))">
+        <h3>Draw Offered</h3>
+        <p>Your opponent is offering a draw.</p>
+        <div class="modal-actions">
+            <button onclick="declineDraw()" class="btn-danger">Decline</button>
+            <button onclick="acceptDraw()" class="btn-confirm">Accept Draw</button>
+        </div>
+    </div>
+
+    <!-- Undo request notification -->
+    <div class="online-overlay" id="undo-request-overlay"></div>
+    <div class="pgn-modal" id="undo-request-modal" style="min-width:0;width:min(340px,calc(100vw - 32px))">
+        <h3>Undo Requested</h3>
+        <p>Your opponent wants to take back their last move.</p>
+        <div class="modal-actions">
+            <button onclick="declineUndo()" class="btn-danger">Decline</button>
+            <button onclick="acceptUndo()" class="btn-confirm">Allow Undo</button>
+        </div>
+    </div>
+
+    <!-- Analysis Modal -->
+    <div class="analysis-overlay" id="analysis-overlay"></div>
+    <div class="analysis-modal" id="analysis-modal">
+        <div class="analysis-modal-header">
+            <h3><i class="fas fa-chart-line"></i> Game Analysis</h3>
+        </div>
+        <div class="analysis-modal-inner">
+            <div class="analysis-summary" id="analysis-summary"></div>
+            <div class="analysis-moves-label">Move by Move</div>
+            <ul class="analysis-move-list" id="analysis-move-list"></ul>
+        </div>
+        <div class="analysis-modal-footer">
+            <button onclick="hideAnalysisModal()">Close</button>
+        </div>
+    </div>
+
+    <!-- Promotion Dialog -->
+    <div class="promotion-overlay" id="promotion-overlay"></div>
+    <div class="promotion-dialog" id="promotion-dialog">
+        <h3>Promote Pawn</h3>
+        <div class="promotion-choices" id="promotion-choices"></div>
+    </div>
+
+    <script src="/vendor/socket.io.min.js"></script>
+    <script src="/chess-engine.js"></script>
+    <script src="/client.js"></script>
+</body>
+</html>

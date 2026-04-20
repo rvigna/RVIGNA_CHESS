@@ -1,0 +1,37 @@
+/* ── Self-hosted Google Fonts (offline-capable) ──────── */
+
+/* Crimson Pro — normal 400 & 500 */
+@font-face {
+  font-family: 'Crimson Pro';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('./fonts/crimson-pro-regular.woff2') format('woff2');
+}
+
+/* Crimson Pro — italic 400 */
+@font-face {
+  font-family: 'Crimson Pro';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/crimson-pro-italic.woff2') format('woff2');
+}
+
+/* Playfair Display — normal 700 */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/playfair-display-700.woff2') format('woff2');
+}
+
+/* Playfair Display — italic 400 & 700 (same variable file) */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/playfair-display-italic.woff2') format('woff2');
+}
