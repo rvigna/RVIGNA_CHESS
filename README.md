@@ -165,6 +165,54 @@ sequenceDiagram
     end
 ```
 
+## Testing
+
+The test suite uses [Playwright](https://playwright.dev/) and covers three areas:
+
+| File | Tests | Description |
+|------|-------|-------------|
+| `tests/chess-ui.spec.js` | 27 | Text-client UI — moves, promotion, resign, draw detection |
+| `tests/ten-games.spec.js` | 10 | 10 full AI-vs-AI games through the text-client; long games capped at 50 moves |
+| `tests/main-app.spec.js` | 22 | Main app — local 2-player, vs-computer, resign, undo, move history |
+| `tests/main-app-ten-games.spec.js` | 10 | 10 full AI-vs-AI games on the main app; long games capped at 50 moves |
+
+### Prerequisites
+
+```bash
+npm install
+npx playwright install chromium   # first time only
+```
+
+### Run all tests
+
+```bash
+npx playwright test
+```
+
+### Run a specific suite
+
+```bash
+npx playwright test tests/chess-ui.spec.js
+npx playwright test tests/ten-games.spec.js
+npx playwright test tests/main-app.spec.js
+npx playwright test tests/main-app-ten-games.spec.js
+```
+
+### View the HTML report
+
+```bash
+npx playwright test --reporter=html
+npx playwright show-report          # opens http://localhost:9323
+```
+
+The two web servers (`chess-text-api.js` on port 3001, `server.js` on port 3000) are started automatically by Playwright via `playwright.config.js`; no manual `npm start` is needed before running tests.
+
+### 50-move resignation rule (AI-vs-AI suites)
+
+If an AI-vs-AI game has not ended after 100 half-moves (50 full moves), the side with less material resigns automatically, keeping each game bounded to a predictable duration.
+
+---
+
 ## Keyboard Shortcuts
 
 | Key | Action |

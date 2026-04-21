@@ -274,8 +274,15 @@ function positionKey(board, cc, t) {
 function isThreefoldRepetition(state) {
   const currentKey = positionKey(state.boardState, state.canCastle, state.turn);
   let count = 0;
-  for (const snap of state.boardHistory) {
-    if (snap.turn && positionKey(snap.board, snap.canCastle, snap.turn) === currentKey) count++;
+  if (Array.isArray(state.boardHistory)) {
+    for (const snap of state.boardHistory) {
+      if (snap.turn && positionKey(snap.board, snap.canCastle, snap.turn) === currentKey) count++;
+    }
+  }
+  if (Array.isArray(state.positionKeys)) {
+    for (const key of state.positionKeys) {
+      if (key === currentKey) count++;
+    }
   }
   return count >= 3;
 }
@@ -528,7 +535,6 @@ function undoMove(state, count) {
 
 function resign(state) {
   if (state.gameOver) return { success: false, error: 'Game already over' };
-  if (state.moveHistory.length === 0) return { success: false, error: 'No moves played yet' };
   state.gameOver = true;
   state.gameResult = state.turn === 'white' ? '0-1' : '1-0';
   return { success: true };
