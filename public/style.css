@@ -521,7 +521,7 @@ button.btn-muted:hover { color: #777; background: var(--tan); }
     -webkit-backdrop-filter: blur(14px);
     height: var(--bottom-bar);
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    align-items: stretch;
+    align-items: flex-start;
 }
 .tab-btn {
     flex: 1;
@@ -776,7 +776,12 @@ button.btn-muted:hover { color: #777; background: var(--tan); }
    RESPONSIVE — MOBILE  (< 600px)
 ════════════════════════════════════════════════════ */
 @media (max-width: 599px) {
-    :root { --board: calc(100vw - 24px); --bottom-bar: 56px; }
+    :root {
+        /* 64px = 2×(18px label + 2px gap) + 2×12px col-padding */
+        --board: calc(100vw - 64px);
+        /* keep 56px for icons + add home-indicator clearance */
+        --bottom-bar: calc(56px + env(safe-area-inset-bottom, 0px));
+    }
     .app-layout { padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
     .sidebar-header { padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
     .board-column { padding: 8px 12px 0; }
@@ -788,10 +793,82 @@ button.btn-muted:hover { color: #777; background: var(--tan); }
 }
 
 /* ════════════════════════════════════════════════════
+   RESPONSIVE — MOBILE LANDSCAPE  (phones in landscape)
+   Targets devices whose height < 600px in landscape
+   (all iPhones, not iPads)
+════════════════════════════════════════════════════ */
+@media (max-height: 600px) and (orientation: landscape) {
+    :root {
+        /* Board sized to fill the short (height) dimension */
+        --board: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 56px);
+        --bottom-bar: 0px;
+    }
+
+    body { overflow: hidden; }
+
+    /* Hide portrait navigation — use the side panel instead */
+    .bottom-tab-bar       { display: none !important; }
+    .mobile-menu-sheet    { display: none !important; }
+    .mobile-menu-backdrop { display: none !important; }
+
+    .app-layout {
+        padding: 0;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    /*
+     * board-column becomes a 2-column grid:
+     *   col 1 (auto) : board-wrapper (nth-child 4)
+     *   col 2 (1fr)  : online-bar (1), status-bar (2),
+     *                  captured-black (3), [1fr gap], captured-white (5)
+     *
+     * HTML child order inside .board-column:
+     *   1 #online-bar  2 #status-bar  3 captured-black
+     *   4 .board-wrapper  5 captured-white  6 .controls  7 input
+     */
+    .board-column {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto auto 1fr auto;
+        column-gap: 12px;
+        row-gap: 6px;
+        align-items: start;
+        height: 100dvh;
+        padding: calc(env(safe-area-inset-top,  0px) + 8px)
+                 calc(env(safe-area-inset-right, 0px) + 10px)
+                 calc(env(safe-area-inset-bottom,0px) + 8px)
+                 calc(env(safe-area-inset-left,  0px) + 10px);
+    }
+
+    /* Board spans all 5 rows in the left column, vertically centred */
+    .board-column > :nth-child(4) {
+        grid-column: 1;
+        grid-row: 1 / 6;
+        align-self: center;
+    }
+
+    /* Right column — override width so items fill the panel */
+    .board-column > :nth-child(1) { grid-column: 2; grid-row: 1; width: auto; margin: 0; }   /* online-bar     */
+    .board-column > :nth-child(2) { grid-column: 2; grid-row: 2; width: auto; margin: 0; }   /* status-bar     */
+    .board-column > :nth-child(3) { grid-column: 2; grid-row: 3; width: auto; }               /* captured-black */
+    .board-column > :nth-child(5) { grid-column: 2; grid-row: 5; width: auto; }               /* captured-white */
+    .board-column > :nth-child(6),
+    .board-column > :nth-child(7) { display: none; }                                          /* controls, input */
+
+    /* Sidebars: account for notch on left/right in landscape */
+    .sidebar-left  { top: env(safe-area-inset-top, 0px); }
+    .sidebar-right { top: env(safe-area-inset-top, 0px); }
+}
+
+/* ════════════════════════════════════════════════════
    RESPONSIVE — TABLET  (600px - 1024px)
 ════════════════════════════════════════════════════ */
 @media (min-width: 600px) and (max-width: 1024px) {
-    :root { --board: min(480px, calc(100vw - 48px)); --bottom-bar: 60px; }
+    :root {
+        --board: min(480px, calc(100vw - 48px));
+        --bottom-bar: calc(60px + env(safe-area-inset-bottom, 0px));
+    }
     .app-layout { padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
     .sidebar-header { padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
     .board-column { padding: 16px 20px 0; }
