@@ -85,7 +85,7 @@ body::before {
     z-index: 9999;
     background: #92400e;
     color: #fff;
-    padding: 10px 20px;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 20px 10px;
     font-size: 13px;
     font-weight: 600;
     align-items: center;
@@ -777,7 +777,8 @@ button.btn-muted:hover { color: #777; background: var(--tan); }
 ════════════════════════════════════════════════════ */
 @media (max-width: 599px) {
     :root { --board: calc(100vw - 24px); --bottom-bar: 56px; }
-    .app-layout { padding-top: 8px; }
+    .app-layout { padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+    .sidebar-header { padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
     .board-column { padding: 8px 12px 0; }
     .status-bar { padding: 8px 12px; min-height: 34px; }
     .captured-pieces-container { padding: 3px 8px; min-height: 26px; }
@@ -791,7 +792,8 @@ button.btn-muted:hover { color: #777; background: var(--tan); }
 ════════════════════════════════════════════════════ */
 @media (min-width: 600px) and (max-width: 1024px) {
     :root { --board: min(480px, calc(100vw - 48px)); --bottom-bar: 60px; }
-    .app-layout { padding-top: 16px; }
+    .app-layout { padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
+    .sidebar-header { padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
     .board-column { padding: 16px 20px 0; }
     .controls { display: flex; }
     .desktop-controls { display: none !important; }
